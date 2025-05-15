@@ -14,15 +14,35 @@ async function main() {
   const Sentiment = await import('vader-sentiment');
   const sentiment = Sentiment.SentimentIntensityAnalyzer;
 
+  // Decode the private key and verify its length
+  let decodedKey;
+  try {
+    decodedKey = bs58.decode(process.env.PRIVATE_KEY_BOT1);
+    console.log("Decoded secret key length:", decodedKey.length);
+    console.log("Decoded secret key bytes:", decodedKey);
+  } catch (error) {
+    throw new Error("Failed to decode secret key: " + error.message);
+  }
+
+  let wallet;
+  if (decodedKey.length === 32) {
+    console.log("Generating keypair from 32-byte secret key...");
+    wallet = Keypair.fromSecretKey(decodedKey);
+  } else if (decodedKey.length === 64) {
+    console.log("Using 64-byte combined key...");
+    wallet = Keypair.fromSecretKey(decodedKey);
+  } else {
+    throw new Error("Expected 32 or 64-byte secret key, got " + decodedKey.length + " bytes");
+  }
+
   const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
-  const wallet = Keypair.fromSecretKey(bs58.decode(process.env.PRIVATE_KEY_BOT1));
 
   const TOKENS = [
     { name: "BONK", mint: new PublicKey("DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263"), poolId: new PublicKey("7yN93oKREeFoY83oL7bS5bWsyT4iLpfUN6JAZ9ZqKZC"), decimals: 5 },
-    { name: "WIF", mint: new PublicKey("EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm"), poolId: new PublicKey("ep2ib6dydeeqd8mfe2ezhcxx3kp3k2elkkirfpm5eymx"), decimals: 6 }, 
-    { name: "POPCAT", mint: new PublicKey("7GCihgDB8feCmjBR3f2KYv83MVEx8JMxtUf7zFoKRoz1"), poolId: new PublicKey("frhb8l7y9qq41qzxyltc2nw8an1rjfllxrf2x9rwllmo"), decimals: 9 }, // Verify pool
-    { name: "MEW", mint: new PublicKey("MEW1gQS6F9M6zCJfAA81YHqeG8nLNn3SKR3X1MJbSRL"), poolId: new PublicKey("879f697iudjgmevrkrcnw21fcxiaeljk1ffsw2atebce"), decimals: 5 }, // Verify pool
-    { name: "GME", mint: new PublicKey("8wXtPeU6557ETkp9WHFY1nkj4S4t2k8UFhFWUAbDH6N"), poolId: new PublicKey("9tz6vykibdlyx2rngwc5tesu4pyve4jd6tm56352ugte"), decimals: 9 }, // Verify pool
+    { name: "WIF", mint: new PublicKey("EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm"), poolId: new PublicKey("ep2ib6dydeeqd8mfe2ezhcxx3kp3k2elkkirfpm5eymx"), decimals: 6 },
+    { name: "POPCAT", mint: new PublicKey("7GCihgDB8feCmjBR3f2KYv83MVEx8JMxtUf7zFoKRoz1"), poolId: new PublicKey("frhb8l7y9qq41qzxyltc2nw8an1rjfllxrf2x9rwllmo"), decimals: 9 },
+    { name: "MEW", mint: new PublicKey("MEW1gQS6F9M6zCJfAA81YHqeG8nLNn3SKR3X1MJbSRL"), poolId: new PublicKey("879f697iudjgmevrkrcnw21fcxiaeljk1ffsw2atebce"), decimals: 5 },
+    { name: "GME", mint: new PublicKey("8wXtPeU6557ETkp9WHFY1nkj4S4t2k8UFhFWUAbDH6N"), poolId: new PublicKey("An5pCsmA9KqR7pCENWBox9k2EoWv5xA5rNaDArhSncC"), decimals: 9 },
   ];
 
   const BUY_THRESHOLD = 0.1; // Sentiment score for buying
